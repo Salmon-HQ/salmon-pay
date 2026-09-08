@@ -1,0 +1,13 @@
+# Salmon Pay
+
+Salmon Pay creates one USDC payment request with a Solana Pay interface for people and, when the configured facilitator supports the selected network, an x402 v2 interface for software agents.
+
+## Public documentation
+
+- API reference: /docs
+- Service health: /api/health
+- Facilitator capabilities: /api/x402/status
+
+## API conventions
+
+Authenticated endpoints accept `Authorization: Bearer <api-key>`. JSON responses use a top-level `data` or `error` envelope. Never send wallet seed phrases or private keys to Salmon Pay.

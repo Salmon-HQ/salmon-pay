@@ -1,0 +1,3 @@
+import { ensureSchema } from '@/lib/repository';
+import { productionReadiness } from '@/lib/production-readiness';
+export async function GET(){try{await ensureSchema();const readiness=productionReadiness(),status=readiness.ready?'ok':'degraded';return Response.json({status,service:'salmon-pay',storage:'ok',productionConfiguration:readiness,time:new Date().toISOString()},{status:readiness.ready?200:503,headers:{'cache-control':'no-store'}})}catch{return Response.json({status:'degraded',service:'salmon-pay',storage:'unavailable',time:new Date().toISOString()},{status:503,headers:{'cache-control':'no-store'}})}}
