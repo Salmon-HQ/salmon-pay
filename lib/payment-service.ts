@@ -12,12 +12,9 @@ import {
   settlePaymentAtomically,
 } from './repository';
 import { assertMainnetReady } from './production-readiness';
+import { canonicalPaymentInput, sha256 } from './idempotency';
 
 const id = (prefix: string) => `${prefix}_${crypto.randomUUID().replaceAll('-', '').slice(0, 16)}`;
-async function digest(value: string) {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 export async function createPayment(
   input: {
     amount: string;
@@ -56,7 +53,7 @@ export async function createPayment(
     expiresAt: new Date(now.getTime() + ttl * 1000).toISOString(),
   };
   if (idempotencyKey) {
-    const canonical = JSON.stringify({
+    const canonical = canonicalPaymentInput({
       amount: display,
       recipient: payment.recipient,
       description: payment.description,
@@ -64,8 +61,8 @@ export async function createPayment(
       ttl,
     });
     return (await putPaymentIdempotently<PaymentRequest>(
-      await digest(idempotencyKey),
-      await digest(canonical),
+      await sha256(idempotencyKey),
+      await sha256(canonical),
       payment.id,
       payment,
     )) as PaymentRequest;

@@ -2,25 +2,7 @@ import { getPayment, markPaymentPaid, requirements } from '@/lib/payment-service
 import { isX402Enabled, validateFacilitatorUrl } from '@/lib/config';
 import { HttpFacilitatorAdapter } from '@/lib/adapters';
 import { rateLimit } from '@/lib/rate-limit';
-type PaymentPayload = {
-  x402Version: number;
-  accepted?: { scheme?: string; network?: string; asset?: string; amount?: string; payTo?: string };
-  payload?: unknown;
-};
-const encode = (value: unknown) => btoa(JSON.stringify(value));
-function matches(payload: PaymentPayload, accepted: ReturnType<typeof requirements>) {
-  // Do not let a caller substitute an easier requirement that the facilitator
-  // would independently consider valid. It must be the requirement we issued.
-  const value = payload.accepted;
-  return (
-    payload.x402Version === 2 &&
-    value?.scheme === accepted.scheme &&
-    value.network === accepted.network &&
-    value.asset === accepted.asset &&
-    value.amount === accepted.amount &&
-    value.payTo === accepted.payTo
-  );
-}
+import { encodeX402Header, matchesX402Requirements, type X402PaymentPayload } from '@/lib/x402';
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const limited = await rateLimit(request, 'x402', 120, 60);
   if (limited instanceof Response) return limited;
@@ -62,14 +44,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!signature)
     return Response.json(required, {
       status: 402,
-      headers: { 'PAYMENT-REQUIRED': encode(required), 'cache-control': 'no-store' },
+      headers: { 'PAYMENT-REQUIRED': encodeX402Header(required), 'cache-control': 'no-store' },
     });
   try {
-    const payload = JSON.parse(atob(signature)) as PaymentPayload;
-    if (!matches(payload, accepted))
+    const payload = JSON.parse(atob(signature)) as X402PaymentPayload;
+    if (!matchesX402Requirements(payload, accepted))
       return Response.json(
         { ...required, error: 'Payment payload does not match this request.' },
-        { status: 402, headers: { 'PAYMENT-REQUIRED': encode(required) } },
+        { status: 402, headers: { 'PAYMENT-REQUIRED': encodeX402Header(required) } },
       );
     const facilitator = new HttpFacilitatorAdapter(
         validateFacilitatorUrl(),
@@ -79,7 +61,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (!verification.isValid)
       return Response.json(
         { ...required, error: verification.invalidReason ?? 'Payment verification failed.' },
-        { status: 402, headers: { 'PAYMENT-REQUIRED': encode(required) } },
+        { status: 402, headers: { 'PAYMENT-REQUIRED': encodeX402Header(required) } },
       );
     const result = await facilitator.settle(payload, accepted);
     if (!result.success || !result.transaction)
@@ -88,7 +70,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           ...required,
           error: result.errorMessage ?? result.errorReason ?? 'Payment settlement failed.',
         },
-        { status: 402, headers: { 'PAYMENT-REQUIRED': encode(required) } },
+        { status: 402, headers: { 'PAYMENT-REQUIRED': encodeX402Header(required) } },
       );
     await markPaymentPaid(payment, {
       signature: result.transaction,
@@ -103,7 +85,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     };
     return Response.json(
       { data: { message: 'Paid resource unlocked', receipt: `/api/receipts/${id}` } },
-      { headers: { 'PAYMENT-RESPONSE': encode(settled), 'cache-control': 'no-store' } },
+      {
+        headers: {
+          'PAYMENT-RESPONSE': encodeX402Header(settled),
+          'cache-control': 'no-store',
+        },
+      },
     );
   } catch (error) {
     return Response.json(

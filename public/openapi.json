@@ -324,6 +324,37 @@
         }
       }
     },
+    "/api/auth/bootstrap": {
+      "post": {
+        "tags": ["API keys"],
+        "summary": "Issue the first dashboard API key",
+        "parameters": [
+          {
+            "name": "x-bootstrap-secret",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "201": { "description": "Key issued; raw key is shown once" },
+          "403": { "description": "Bootstrap is disabled or the production secret is invalid" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/proxy/{id}": {
+      "get": {
+        "tags": ["x402"],
+        "summary": "Guard or forward a resource after payment",
+        "parameters": [{ "$ref": "#/components/parameters/PaymentId" }],
+        "responses": {
+          "200": { "description": "Paid resource or upstream response" },
+          "307": { "description": "Redirect to x402 settlement for an unpaid request" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": ["Operations"],

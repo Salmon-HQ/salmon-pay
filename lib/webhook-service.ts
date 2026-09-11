@@ -2,23 +2,9 @@ import type { WebhookDelivery, WebhookEndpoint } from './domain';
 import { acquireWebhookLease, getRecord, listRecords, putRecord } from './repository';
 import { decryptSecret } from './secret-crypto';
 import { assertWebhookDestinationSafe } from './webhook-url';
+import { signWebhook } from './webhook-signature';
 
 const RETRY_MS = [1000, 5000, 30000, 300000, 1800000];
-async function sign(secret: string, timestamp: string, body: string) {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const value = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    new TextEncoder().encode(`${timestamp}.${body}`),
-  );
-  return [...new Uint8Array(value)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 export async function queueWebhookEvent(event: string, data: unknown, targetWebhookId?: string) {
   const now = new Date().toISOString(),
     ids: string[] = [];
@@ -75,7 +61,7 @@ export async function deliverWebhook(id: string) {
         'user-agent': 'SalmonPay-Webhooks/0.1',
         'salmon-event': delivery.event,
         'salmon-delivery': delivery.id,
-        'salmon-signature': `t=${timestamp},v1=${await sign(await decryptSecret(endpoint.secretCiphertext), timestamp, body)}`,
+        'salmon-signature': `t=${timestamp},v1=${await signWebhook(await decryptSecret(endpoint.secretCiphertext), timestamp, body)}`,
       },
       body,
       redirect: 'manual',

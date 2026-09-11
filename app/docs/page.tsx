@@ -167,6 +167,24 @@ Cache-Control: no-store
     response: `{ "data": [ ApiKeyMetadata, … ] }`,
   },
   {
+    method: 'POST',
+    path: '/api/auth/bootstrap',
+    summary:
+      'Issue the first dashboard key in development or with the production bootstrap secret.',
+    request: `Production header: x-bootstrap-secret: <secret>`,
+    response: `{ "data": { "id": "key_…", "key": "sk_test_…", "scopes": [ … ] }, "warning": "Local development only. Store this key securely." }`,
+    notes:
+      'Rate limited to five attempts per minute. Production requests without the configured bootstrap secret return 403.',
+  },
+  {
+    method: 'GET',
+    path: '/api/proxy/{id}',
+    summary: 'Guard a local or upstream resource behind a settled payment request.',
+    response: `{ "data": { "message": "Paid proxy unlocked", "paymentRequestId": "pay_…" } }`,
+    notes:
+      'Pending requests redirect to the x402 resource. When PAID_RESOURCE_UPSTREAM is set, the upstream receives x-salmon-payment-id.',
+  },
+  {
     method: 'GET',
     path: '/api/health',
     summary: 'Check storage and production configuration readiness.',
