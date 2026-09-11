@@ -7,61 +7,482 @@
   },
   "servers": [{ "url": "/", "description": "Current Salmon Pay deployment" }],
   "tags": [
-    { "name": "Payments" }, { "name": "x402" }, { "name": "Webhooks" },
-    { "name": "API keys" }, { "name": "Operations" }
+    { "name": "Payments" },
+    { "name": "x402" },
+    { "name": "Webhooks" },
+    { "name": "API keys" },
+    { "name": "Operations" }
   ],
   "paths": {
     "/api/payment-requests": {
-      "get": { "tags": ["Payments"], "summary": "List payment requests", "security": [{ "bearerAuth": [] }], "x-required-scope": "payments:read", "responses": { "200": { "description": "Payment requests", "content": { "application/json": { "schema": { "type": "object", "required": ["data"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PaymentRequest" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
-      "post": { "tags": ["Payments"], "summary": "Create a payment request", "security": [{ "bearerAuth": [] }], "x-required-scope": "payments:write", "parameters": [{ "name": "Idempotency-Key", "in": "header", "required": false, "schema": { "type": "string", "minLength": 8, "maxLength": 200 } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePaymentRequest" } } } }, "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentEnvelope" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/RateLimited" } } }
+      "get": {
+        "tags": ["Payments"],
+        "summary": "List payment requests",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "payments:read",
+        "responses": {
+          "200": {
+            "description": "Payment requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/PaymentRequest" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Create a payment request",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "payments:write",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string", "minLength": 8, "maxLength": 200 }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreatePaymentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/PaymentEnvelope" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
     },
     "/api/payment-requests/{id}": {
-      "get": { "tags": ["Payments"], "summary": "Get public payment status", "parameters": [{ "$ref": "#/components/parameters/PaymentId" }], "responses": { "200": { "description": "Payment status with payment interfaces", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "allOf": [{ "$ref": "#/components/schemas/PaymentRequest" }, { "type": "object", "properties": { "interfaces": { "type": "object", "additionalProperties": { "type": "string" } }, "receipt": { "type": ["string", "null"] } } }] } } } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/RateLimited" } } }
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Get public payment status",
+        "parameters": [{ "$ref": "#/components/parameters/PaymentId" }],
+        "responses": {
+          "200": {
+            "description": "Payment status with payment interfaces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/PaymentRequest" },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "interfaces": {
+                              "type": "object",
+                              "additionalProperties": { "type": "string" }
+                            },
+                            "receipt": { "type": ["string", "null"] }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
     },
     "/pay/{id}": {
-      "get": { "tags": ["x402"], "summary": "Access the canonical x402 v2 paid resource", "parameters": [{ "$ref": "#/components/parameters/PaymentId" }, { "name": "PAYMENT-SIGNATURE", "in": "header", "required": false, "schema": { "type": "string", "contentEncoding": "base64" } }], "responses": { "200": { "description": "Resource unlocked; PAYMENT-RESPONSE contains the base64 settlement result", "headers": { "PAYMENT-RESPONSE": { "schema": { "type": "string", "contentEncoding": "base64" } } } }, "402": { "description": "Payment required; PAYMENT-REQUIRED contains the base64 x402 v2 requirements", "headers": { "PAYMENT-REQUIRED": { "required": true, "schema": { "type": "string", "contentEncoding": "base64" } } } }, "404": { "$ref": "#/components/responses/NotFound" }, "503": { "description": "x402 is unavailable for this network" } } }
+      "get": {
+        "tags": ["x402"],
+        "summary": "Access the canonical x402 v2 paid resource",
+        "parameters": [
+          { "$ref": "#/components/parameters/PaymentId" },
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string", "contentEncoding": "base64" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource unlocked; PAYMENT-RESPONSE contains the base64 settlement result",
+            "headers": {
+              "PAYMENT-RESPONSE": { "schema": { "type": "string", "contentEncoding": "base64" } }
+            }
+          },
+          "402": {
+            "description": "Payment required; PAYMENT-REQUIRED contains the base64 x402 v2 requirements",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "required": true,
+                "schema": { "type": "string", "contentEncoding": "base64" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "503": { "description": "x402 is unavailable for this network" }
+        }
+      }
     },
     "/api/x402/{id}": {
-      "get": { "tags": ["x402"], "summary": "Backward-compatible alias for /pay/{id}", "parameters": [{ "$ref": "#/components/parameters/PaymentId" }], "responses": { "200": { "description": "Resource unlocked" }, "402": { "description": "Payment required" }, "404": { "$ref": "#/components/responses/NotFound" }, "503": { "description": "x402 unavailable" } } }
+      "get": {
+        "tags": ["x402"],
+        "summary": "Backward-compatible alias for /pay/{id}",
+        "parameters": [{ "$ref": "#/components/parameters/PaymentId" }],
+        "responses": {
+          "200": { "description": "Resource unlocked" },
+          "402": { "description": "Payment required" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "503": { "description": "x402 unavailable" }
+        }
+      }
     },
     "/api/receipts/{id}": {
-      "get": { "tags": ["Payments"], "summary": "Get an immutable settlement receipt", "parameters": [{ "$ref": "#/components/parameters/PaymentId" }], "responses": { "200": { "description": "Receipt", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Receipt" } } } } } }, "404": { "$ref": "#/components/responses/NotFound" } } }
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Get an immutable settlement receipt",
+        "parameters": [{ "$ref": "#/components/parameters/PaymentId" }],
+        "responses": {
+          "200": {
+            "description": "Receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "data": { "$ref": "#/components/schemas/Receipt" } }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     },
     "/api/webhooks": {
-      "get": { "tags": ["Webhooks"], "summary": "List webhook endpoints", "security": [{ "bearerAuth": [] }], "x-required-scope": "webhooks:read", "responses": { "200": { "description": "Webhook endpoints" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
-      "post": { "tags": ["Webhooks"], "summary": "Register a webhook endpoint", "security": [{ "bearerAuth": [] }], "x-required-scope": "webhooks:write", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["url"], "properties": { "url": { "type": "string", "format": "uri", "pattern": "^https://" }, "events": { "type": "array", "items": { "type": "string", "enum": ["payment.paid"] }, "default": ["payment.paid"] } } } } } }, "responses": { "201": { "description": "Registered; secret is shown once" }, "400": { "$ref": "#/components/responses/BadRequest" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "List webhook endpoints",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "webhooks:read",
+        "responses": {
+          "200": { "description": "Webhook endpoints" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Register a webhook endpoint",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "webhooks:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+                  "events": {
+                    "type": "array",
+                    "items": { "type": "string", "enum": ["payment.paid"] },
+                    "default": ["payment.paid"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Registered; secret is shown once" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
     },
     "/api/webhooks/test": {
-      "post": { "tags": ["Webhooks"], "summary": "Send a signed test event", "security": [{ "bearerAuth": [] }], "x-required-scope": "webhooks:write", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["webhookId"], "properties": { "webhookId": { "type": "string" } } } } } }, "responses": { "200": { "description": "Delivery result" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Send a signed test event",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "webhooks:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["webhookId"],
+                "properties": { "webhookId": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Delivery result" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     },
     "/api/webhooks/deliveries": {
-      "get": { "tags": ["Webhooks"], "summary": "List webhook deliveries", "security": [{ "bearerAuth": [] }], "x-required-scope": "webhooks:read", "responses": { "200": { "description": "Delivery history" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
-      "post": { "tags": ["Webhooks"], "summary": "Process or requeue webhook deliveries", "security": [{ "bearerAuth": [] }], "x-required-scope": "webhooks:write", "requestBody": { "required": false, "content": { "application/json": { "schema": { "type": "object", "properties": { "id": { "type": "string" }, "action": { "type": "string", "enum": ["requeue"] } } } } } }, "responses": { "200": { "description": "Delivery result" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "List webhook deliveries",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "webhooks:read",
+        "responses": {
+          "200": { "description": "Delivery history" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Process or requeue webhook deliveries",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "webhooks:write",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "action": { "type": "string", "enum": ["requeue"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Delivery result" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     },
     "/api/api-keys": {
-      "get": { "tags": ["API keys"], "summary": "List API key metadata", "security": [{ "bearerAuth": [] }], "x-required-scope": "keys:read", "responses": { "200": { "description": "Key metadata without raw secrets" }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
-      "post": { "tags": ["API keys"], "summary": "Issue a scoped API key", "security": [{ "bearerAuth": [] }], "x-required-scope": "keys:write", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string", "default": "Default" }, "scopes": { "type": "array", "items": { "$ref": "#/components/schemas/ApiScope" } } } } } } }, "responses": { "201": { "description": "Key issued; raw key is shown once" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+      "get": {
+        "tags": ["API keys"],
+        "summary": "List API key metadata",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "keys:read",
+        "responses": {
+          "200": { "description": "Key metadata without raw secrets" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["API keys"],
+        "summary": "Issue a scoped API key",
+        "security": [{ "bearerAuth": [] }],
+        "x-required-scope": "keys:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "default": "Default" },
+                  "scopes": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/ApiScope" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Key issued; raw key is shown once" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
     },
-    "/api/health": { "get": { "tags": ["Operations"], "summary": "Check storage and production readiness", "responses": { "200": { "description": "Healthy" }, "503": { "description": "Storage or production configuration is degraded" } } } },
-    "/api/x402/status": { "get": { "tags": ["Operations", "x402"], "summary": "Check facilitator capabilities", "responses": { "200": { "description": "Facilitator available" }, "503": { "description": "Facilitator unavailable" } } } }
+    "/api/health": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Check storage and production readiness",
+        "responses": {
+          "200": { "description": "Healthy" },
+          "503": { "description": "Storage or production configuration is degraded" }
+        }
+      }
+    },
+    "/api/x402/status": {
+      "get": {
+        "tags": ["Operations", "x402"],
+        "summary": "Check facilitator capabilities",
+        "responses": {
+          "200": { "description": "Facilitator available" },
+          "503": { "description": "Facilitator unavailable" }
+        }
+      }
+    }
   },
   "components": {
-    "securitySchemes": { "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "Salmon API key" } },
-    "parameters": { "PaymentId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^pay_" } } },
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "Salmon API key" }
+    },
+    "parameters": {
+      "PaymentId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^pay_" }
+      }
+    },
     "schemas": {
       "Network": { "type": "string", "enum": ["devnet", "mainnet-beta"] },
-      "ApiScope": { "type": "string", "enum": ["payments:read", "payments:write", "webhooks:read", "webhooks:write", "keys:read", "keys:write"] },
-      "CreatePaymentRequest": { "type": "object", "required": ["amount", "recipient", "description"], "properties": { "amount": { "type": "string", "pattern": "^\\d+(?:[.,]\\d{1,6})?$", "examples": ["2.50"] }, "recipient": { "type": "string", "description": "Base58 Solana public key" }, "description": { "type": "string", "minLength": 1 }, "network": { "$ref": "#/components/schemas/Network", "default": "mainnet-beta" }, "expiresInSeconds": { "type": "integer", "enum": [3600, 86400, 604800], "default": 86400 } } },
-      "PaymentRequest": { "type": "object", "required": ["id", "amount", "amountAtomic", "asset", "assetMint", "network", "networkId", "recipient", "description", "reference", "status", "createdAt", "expiresAt"], "properties": { "id": { "type": "string" }, "amount": { "type": "string" }, "amountAtomic": { "type": "string" }, "asset": { "const": "USDC" }, "assetMint": { "type": "string" }, "network": { "$ref": "#/components/schemas/Network" }, "networkId": { "type": "string", "description": "CAIP-2 Solana network identifier" }, "recipient": { "type": "string" }, "description": { "type": "string" }, "reference": { "type": "string" }, "status": { "type": "string", "enum": ["pending", "paid", "expired", "failed"] }, "createdAt": { "type": "string", "format": "date-time" }, "expiresAt": { "type": "string", "format": "date-time" }, "paidAt": { "type": "string", "format": "date-time" }, "signature": { "type": "string" }, "payer": { "type": "string" }, "channel": { "type": "string", "enum": ["solana-pay", "x402"] } } },
-      "PaymentEnvelope": { "type": "object", "required": ["data"], "properties": { "data": { "$ref": "#/components/schemas/PaymentRequest" } } },
-      "Receipt": { "type": "object", "required": ["id", "paymentRequestId", "amount", "asset", "network", "recipient", "signature", "paidAt", "channel"], "properties": { "id": { "type": "string" }, "paymentRequestId": { "type": "string" }, "amount": { "type": "string" }, "asset": { "const": "USDC" }, "network": { "$ref": "#/components/schemas/Network" }, "recipient": { "type": "string" }, "signature": { "type": "string" }, "payer": { "type": "string" }, "paidAt": { "type": "string", "format": "date-time" }, "channel": { "type": "string", "enum": ["solana-pay", "x402"] } } },
-      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string" } } } } }
+      "ApiScope": {
+        "type": "string",
+        "enum": [
+          "payments:read",
+          "payments:write",
+          "webhooks:read",
+          "webhooks:write",
+          "keys:read",
+          "keys:write"
+        ]
+      },
+      "CreatePaymentRequest": {
+        "type": "object",
+        "required": ["amount", "recipient", "description"],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d+(?:[.,]\\d{1,6})?$",
+            "examples": ["2.50"]
+          },
+          "recipient": { "type": "string", "description": "Base58 Solana public key" },
+          "description": { "type": "string", "minLength": 1 },
+          "network": { "$ref": "#/components/schemas/Network", "default": "mainnet-beta" },
+          "expiresInSeconds": { "type": "integer", "enum": [3600, 86400, 604800], "default": 86400 }
+        }
+      },
+      "PaymentRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "amount",
+          "amountAtomic",
+          "asset",
+          "assetMint",
+          "network",
+          "networkId",
+          "recipient",
+          "description",
+          "reference",
+          "status",
+          "createdAt",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "amount": { "type": "string" },
+          "amountAtomic": { "type": "string" },
+          "asset": { "const": "USDC" },
+          "assetMint": { "type": "string" },
+          "network": { "$ref": "#/components/schemas/Network" },
+          "networkId": { "type": "string", "description": "CAIP-2 Solana network identifier" },
+          "recipient": { "type": "string" },
+          "description": { "type": "string" },
+          "reference": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "paid", "expired", "failed"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "paidAt": { "type": "string", "format": "date-time" },
+          "signature": { "type": "string" },
+          "payer": { "type": "string" },
+          "channel": { "type": "string", "enum": ["solana-pay", "x402"] }
+        }
+      },
+      "PaymentEnvelope": {
+        "type": "object",
+        "required": ["data"],
+        "properties": { "data": { "$ref": "#/components/schemas/PaymentRequest" } }
+      },
+      "Receipt": {
+        "type": "object",
+        "required": [
+          "id",
+          "paymentRequestId",
+          "amount",
+          "asset",
+          "network",
+          "recipient",
+          "signature",
+          "paidAt",
+          "channel"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "paymentRequestId": { "type": "string" },
+          "amount": { "type": "string" },
+          "asset": { "const": "USDC" },
+          "network": { "$ref": "#/components/schemas/Network" },
+          "recipient": { "type": "string" },
+          "signature": { "type": "string" },
+          "payer": { "type": "string" },
+          "paidAt": { "type": "string", "format": "date-time" },
+          "channel": { "type": "string", "enum": ["solana-pay", "x402"] }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": { "code": { "type": "string" }, "message": { "type": "string" } }
+          }
+        }
+      }
     },
     "responses": {
-      "BadRequest": { "description": "Invalid request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-      "Unauthorized": { "description": "Missing key or required scope", "headers": { "WWW-Authenticate": { "schema": { "type": "string" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-      "NotFound": { "description": "Resource not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-      "RateLimited": { "description": "Rate limit exceeded", "headers": { "Retry-After": { "schema": { "type": "integer" } } } }
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Unauthorized": {
+        "description": "Missing key or required scope",
+        "headers": { "WWW-Authenticate": { "schema": { "type": "string" } } },
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded",
+        "headers": { "Retry-After": { "schema": { "type": "integer" } } }
+      }
     }
   }
 }

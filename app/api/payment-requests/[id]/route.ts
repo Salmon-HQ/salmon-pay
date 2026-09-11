@@ -1,3 +1,54 @@
-import { getPayment,refreshHumanPayment,solanaPayUrl,updatePendingAmount } from '@/lib/payment-service';import { requireApiKey } from '@/lib/auth';import { isX402Enabled } from '@/lib/config';import { rateLimit } from '@/lib/rate-limit';
-export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){const limited=await rateLimit(request,'payment-status',120,60);if(limited instanceof Response)return limited;const {id}=await params,p=await getPayment(id);if(!p)return Response.json({error:{code:'not_found',message:'Payment request not found'}},{status:404});try{await refreshHumanPayment(p)}catch(error){console.error('RPC payment check failed',error)}const x402=isX402Enabled(p.network)?{x402:`/pay/${p.id}`,x402Legacy:`/api/x402/${p.id}`}:{x402Unavailable:'Facilitator not configured for this network'};return Response.json({data:{...p,interfaces:{solanaPay:solanaPayUrl(p),...x402},receipt:p.status==='paid'?`/api/receipts/${p.id}`:null}})}
-export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){const denied=await requireApiKey(request,'payments:write');if(denied)return denied;try{const {id}=await params,{amount}=await request.json();return Response.json({data:await updatePendingAmount(id,amount)})}catch(error){return Response.json({error:{code:'invalid_request',message:error instanceof Error?error.message:'Invalid request'}},{status:400})}}
+import {
+  getPayment,
+  refreshHumanPayment,
+  solanaPayUrl,
+  updatePendingAmount,
+} from '@/lib/payment-service';
+import { requireApiKey } from '@/lib/auth';
+import { isX402Enabled } from '@/lib/config';
+import { rateLimit } from '@/lib/rate-limit';
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = await rateLimit(request, 'payment-status', 120, 60);
+  if (limited instanceof Response) return limited;
+  const { id } = await params,
+    p = await getPayment(id);
+  if (!p)
+    return Response.json(
+      { error: { code: 'not_found', message: 'Payment request not found' } },
+      { status: 404 },
+    );
+  try {
+    await refreshHumanPayment(p);
+  } catch (error) {
+    console.error('RPC payment check failed', error);
+  }
+  const x402 = isX402Enabled(p.network)
+    ? { x402: `/pay/${p.id}`, x402Legacy: `/api/x402/${p.id}` }
+    : { x402Unavailable: 'Facilitator not configured for this network' };
+  return Response.json({
+    data: {
+      ...p,
+      interfaces: { solanaPay: solanaPayUrl(p), ...x402 },
+      receipt: p.status === 'paid' ? `/api/receipts/${p.id}` : null,
+    },
+  });
+}
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireApiKey(request, 'payments:write');
+  if (denied) return denied;
+  try {
+    const { id } = await params,
+      { amount } = await request.json();
+    return Response.json({ data: await updatePendingAmount(id, amount) });
+  } catch (error) {
+    return Response.json(
+      {
+        error: {
+          code: 'invalid_request',
+          message: error instanceof Error ? error.message : 'Invalid request',
+        },
+      },
+      { status: 400 },
+    );
+  }
+}

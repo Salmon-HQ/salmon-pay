@@ -1,7 +1,57 @@
-import type { ApiKeyRecord,ApiScope } from './domain';import { listRecords,putRecord } from './repository';
-const ALL_SCOPES:ApiScope[]=['payments:read','payments:write','webhooks:read','webhooks:write','keys:read','keys:write'];
-async function digest(value:string){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('')}
-function safeEqual(a:string,b:string){if(a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i);return diff===0}
-export async function createApiKey(name='Default',scopes:ApiScope[]=ALL_SCOPES){const raw=`sk_${process.env.NODE_ENV==='production'?'live':'test'}_${crypto.randomUUID().replaceAll('-','')}`,record:ApiKeyRecord={id:`key_${crypto.randomUUID().replaceAll('-','').slice(0,12)}`,name,hash:await digest(raw),prefix:raw.slice(0,16),scopes,createdAt:new Date().toISOString()};await putRecord('api_keys',record.id,record);return {record,raw}}
-export async function authenticate(request:Request,scope:ApiScope){const header=request.headers.get('authorization');const raw=header?.startsWith('Bearer ')?header.slice(7):request.headers.get('x-api-key');if(!raw)return null;if(process.env.SALMON_API_KEY&&safeEqual(raw,process.env.SALMON_API_KEY))return {id:'env',name:'Environment key',scopes:ALL_SCOPES};const hash=await digest(raw);for(const key of await listRecords<ApiKeyRecord>('api_keys')){if(safeEqual(key.hash,hash)&&key.scopes.includes(scope)){key.lastUsedAt=new Date().toISOString();await putRecord('api_keys',key.id,key);return key}}return null}
-export async function requireApiKey(request:Request,scope:ApiScope){return (await authenticate(request,scope))?null:Response.json({error:{code:'unauthorized',message:`A valid API key with ${scope} is required.`}},{status:401,headers:{'WWW-Authenticate':'Bearer realm="Salmon Pay API"'}})}
+import type { ApiKeyRecord, ApiScope } from './domain';
+import { listRecords, putRecord } from './repository';
+const ALL_SCOPES: ApiScope[] = [
+  'payments:read',
+  'payments:write',
+  'webhooks:read',
+  'webhooks:write',
+  'keys:read',
+  'keys:write',
+];
+async function digest(value: string) {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function safeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+export async function createApiKey(name = 'Default', scopes: ApiScope[] = ALL_SCOPES) {
+  const raw = `sk_${process.env.NODE_ENV === 'production' ? 'live' : 'test'}_${crypto.randomUUID().replaceAll('-', '')}`,
+    record: ApiKeyRecord = {
+      id: `key_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+      name,
+      hash: await digest(raw),
+      prefix: raw.slice(0, 16),
+      scopes,
+      createdAt: new Date().toISOString(),
+    };
+  await putRecord('api_keys', record.id, record);
+  return { record, raw };
+}
+export async function authenticate(request: Request, scope: ApiScope) {
+  const header = request.headers.get('authorization');
+  const raw = header?.startsWith('Bearer ') ? header.slice(7) : request.headers.get('x-api-key');
+  if (!raw) return null;
+  if (process.env.SALMON_API_KEY && safeEqual(raw, process.env.SALMON_API_KEY))
+    return { id: 'env', name: 'Environment key', scopes: ALL_SCOPES };
+  const hash = await digest(raw);
+  for (const key of await listRecords<ApiKeyRecord>('api_keys')) {
+    if (safeEqual(key.hash, hash) && key.scopes.includes(scope)) {
+      key.lastUsedAt = new Date().toISOString();
+      await putRecord('api_keys', key.id, key);
+      return key;
+    }
+  }
+  return null;
+}
+export async function requireApiKey(request: Request, scope: ApiScope) {
+  return (await authenticate(request, scope))
+    ? null
+    : Response.json(
+        { error: { code: 'unauthorized', message: `A valid API key with ${scope} is required.` } },
+        { status: 401, headers: { 'WWW-Authenticate': 'Bearer realm="Salmon Pay API"' } },
+      );
+}

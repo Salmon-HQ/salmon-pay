@@ -1,3 +1,35 @@
-const publicRpcHosts=new Set(['api.mainnet-beta.solana.com','solana-rpc.publicnode.com']);
-export function productionReadiness(){if(process.env.NODE_ENV!=='production')return {ready:true,missing:[] as string[]};const missing:string[]=[];const required=[['SALMON_API_KEY',process.env.SALMON_API_KEY],['SALMON_BOOTSTRAP_SECRET',process.env.SALMON_BOOTSTRAP_SECRET],['CRON_SECRET',process.env.CRON_SECRET],['WEBHOOK_ENCRYPTION_KEY',process.env.WEBHOOK_ENCRYPTION_KEY]] as const;for(const [name,value] of required)if(!value||value.length<32)missing.push(name);try{const origin=new URL(process.env.NEXT_PUBLIC_APP_URL??'');if(origin.protocol!=='https:')missing.push('NEXT_PUBLIC_APP_URL')}catch{missing.push('NEXT_PUBLIC_APP_URL')}try{const rpc=new URL(process.env.SOLANA_MAINNET_RPC_URL??'');if(rpc.protocol!=='https:'||publicRpcHosts.has(rpc.hostname))missing.push('SOLANA_MAINNET_RPC_URL')}catch{missing.push('SOLANA_MAINNET_RPC_URL')}if(process.env.X402_MAINNET_ENABLED==='true'){if(!process.env.X402_FACILITATOR_TOKEN)missing.push('X402_FACILITATOR_TOKEN');if(!process.env.X402_FACILITATOR_ALLOWED_HOSTS)missing.push('X402_FACILITATOR_ALLOWED_HOSTS')}return {ready:missing.length===0,missing:[...new Set(missing)]}}
-export function assertMainnetReady(){const result=productionReadiness();if(!result.ready)throw new Error(`Production configuration is incomplete: ${result.missing.join(', ')}`)}
+const publicRpcHosts = new Set(['api.mainnet-beta.solana.com', 'solana-rpc.publicnode.com']);
+export function productionReadiness() {
+  if (process.env.NODE_ENV !== 'production') return { ready: true, missing: [] as string[] };
+  const missing: string[] = [];
+  const required = [
+    ['SALMON_API_KEY', process.env.SALMON_API_KEY],
+    ['SALMON_BOOTSTRAP_SECRET', process.env.SALMON_BOOTSTRAP_SECRET],
+    ['CRON_SECRET', process.env.CRON_SECRET],
+    ['WEBHOOK_ENCRYPTION_KEY', process.env.WEBHOOK_ENCRYPTION_KEY],
+  ] as const;
+  for (const [name, value] of required) if (!value || value.length < 32) missing.push(name);
+  try {
+    const origin = new URL(process.env.NEXT_PUBLIC_APP_URL ?? '');
+    if (origin.protocol !== 'https:') missing.push('NEXT_PUBLIC_APP_URL');
+  } catch {
+    missing.push('NEXT_PUBLIC_APP_URL');
+  }
+  try {
+    const rpc = new URL(process.env.SOLANA_MAINNET_RPC_URL ?? '');
+    if (rpc.protocol !== 'https:' || publicRpcHosts.has(rpc.hostname))
+      missing.push('SOLANA_MAINNET_RPC_URL');
+  } catch {
+    missing.push('SOLANA_MAINNET_RPC_URL');
+  }
+  if (process.env.X402_MAINNET_ENABLED === 'true') {
+    if (!process.env.X402_FACILITATOR_TOKEN) missing.push('X402_FACILITATOR_TOKEN');
+    if (!process.env.X402_FACILITATOR_ALLOWED_HOSTS) missing.push('X402_FACILITATOR_ALLOWED_HOSTS');
+  }
+  return { ready: missing.length === 0, missing: [...new Set(missing)] };
+}
+export function assertMainnetReady() {
+  const result = productionReadiness();
+  if (!result.ready)
+    throw new Error(`Production configuration is incomplete: ${result.missing.join(', ')}`);
+}

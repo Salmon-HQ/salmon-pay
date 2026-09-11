@@ -1,5 +1,58 @@
-const ALPHABET='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-export function base58Encode(bytes:Uint8Array){if(bytes.length===0)return '';const digits=[0];for(const byte of bytes){let carry=byte;for(let i=0;i<digits.length;i++){const value=digits[i]*256+carry;digits[i]=value%58;carry=Math.floor(value/58)}while(carry){digits.push(carry%58);carry=Math.floor(carry/58)}}let result='';for(const byte of bytes){if(byte!==0)break;result+='1'}if(!(digits.length===1&&digits[0]===0))for(let i=digits.length-1;i>=0;i--)result+=ALPHABET[digits[i]];return result}
-export function randomPublicKey(){return base58Encode(crypto.getRandomValues(new Uint8Array(32)))}
-export function base58Decode(value:string){if(!value)return new Uint8Array();const bytes=[0];for(const character of value){const digit=ALPHABET.indexOf(character);if(digit<0)throw new Error('Invalid base58 value');let carry=digit;for(let i=0;i<bytes.length;i++){const current=bytes[i]*58+carry;bytes[i]=current&255;carry=current>>8}while(carry){bytes.push(carry&255);carry>>=8}}let leading=0;while(leading<value.length-1&&value[leading]==='1')leading++;const result=new Uint8Array(leading+bytes.length);for(let i=0;i<bytes.length;i++)result[result.length-1-i]=bytes[i];return result}
-export function isSolanaPublicKey(value:unknown){try{return typeof value==='string'&&base58Decode(value).length===32}catch{return false}}
+const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+export function base58Encode(bytes: Uint8Array) {
+  if (bytes.length === 0) return '';
+  const digits = [0];
+  for (const byte of bytes) {
+    let carry = byte;
+    for (let i = 0; i < digits.length; i++) {
+      const value = digits[i] * 256 + carry;
+      digits[i] = value % 58;
+      carry = Math.floor(value / 58);
+    }
+    while (carry) {
+      digits.push(carry % 58);
+      carry = Math.floor(carry / 58);
+    }
+  }
+  let result = '';
+  for (const byte of bytes) {
+    if (byte !== 0) break;
+    result += '1';
+  }
+  if (!(digits.length === 1 && digits[0] === 0))
+    for (let i = digits.length - 1; i >= 0; i--) result += ALPHABET[digits[i]];
+  return result;
+}
+export function randomPublicKey() {
+  return base58Encode(crypto.getRandomValues(new Uint8Array(32)));
+}
+export function base58Decode(value: string) {
+  if (!value) return new Uint8Array();
+  const bytes = [0];
+  for (const character of value) {
+    const digit = ALPHABET.indexOf(character);
+    if (digit < 0) throw new Error('Invalid base58 value');
+    let carry = digit;
+    for (let i = 0; i < bytes.length; i++) {
+      const current = bytes[i] * 58 + carry;
+      bytes[i] = current & 255;
+      carry = current >> 8;
+    }
+    while (carry) {
+      bytes.push(carry & 255);
+      carry >>= 8;
+    }
+  }
+  let leading = 0;
+  while (leading < value.length - 1 && value[leading] === '1') leading++;
+  const result = new Uint8Array(leading + bytes.length);
+  for (let i = 0; i < bytes.length; i++) result[result.length - 1 - i] = bytes[i];
+  return result;
+}
+export function isSolanaPublicKey(value: unknown) {
+  try {
+    return typeof value === 'string' && base58Decode(value).length === 32;
+  } catch {
+    return false;
+  }
+}

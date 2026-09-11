@@ -1,2 +1,20 @@
-import { HttpFacilitatorAdapter } from '@/lib/adapters';import { FACILITATOR_URL,validateFacilitatorUrl } from '@/lib/config';
-export async function GET(){try{const supported=await new HttpFacilitatorAdapter(validateFacilitatorUrl(),process.env.X402_FACILITATOR_TOKEN).supported();return Response.json({status:'ok',facilitator:FACILITATOR_URL,supported})}catch(error){return Response.json({status:'degraded',facilitator:FACILITATOR_URL,error:error instanceof Error?error.message:'Unavailable'},{status:503})}}
+import { HttpFacilitatorAdapter } from '@/lib/adapters';
+import { FACILITATOR_URL, validateFacilitatorUrl } from '@/lib/config';
+export async function GET() {
+  try {
+    const supported = await new HttpFacilitatorAdapter(
+      validateFacilitatorUrl(),
+      process.env.X402_FACILITATOR_TOKEN,
+    ).supported();
+    return Response.json({ status: 'ok', facilitator: FACILITATOR_URL, supported });
+  } catch (error) {
+    return Response.json(
+      {
+        status: 'degraded',
+        facilitator: FACILITATOR_URL,
+        error: error instanceof Error ? error.message : 'Unavailable',
+      },
+      { status: 503 },
+    );
+  }
+}

@@ -1,4 +1,4 @@
-export const schemaStatements=[
+export const schemaStatements = [
   `CREATE TABLE IF NOT EXISTS salmon_records (
     namespace TEXT NOT NULL,
     id TEXT NOT NULL,
