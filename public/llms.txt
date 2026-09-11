@@ -5,9 +5,12 @@ Salmon Pay creates one USDC payment request with a Solana Pay interface for peop
 ## Public documentation
 
 - API reference: /docs
+- Machine-readable OpenAPI 3.1 contract: /openapi.json
 - Service health: /api/health
 - Facilitator capabilities: /api/x402/status
 
 ## API conventions
 
 Authenticated endpoints accept `Authorization: Bearer <api-key>`. JSON responses use a top-level `data` or `error` envelope. Never send wallet seed phrases or private keys to Salmon Pay.
+
+Payment requests are the aggregate root. Human Solana Pay and agent x402 settlement update the same request and produce the same immutable receipt and `payment.paid` event. Use `Idempotency-Key` when creating payments. Treat all IDs as opaque.

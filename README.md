@@ -38,7 +38,7 @@ Webhook requests include `salmon-event`, `salmon-delivery` and `salmon-signature
 
 Payment creation accepts `Idempotency-Key` (8–200 characters). Reusing it with the same request returns the original payment; reusing it with different fields is rejected. Production webhook destinations are checked against public DNS addresses at registration and delivery time, and signing secrets are AES-GCM encrypted at rest.
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) and the in-app `/docs` page.
+See [ARCHITECTURE.md](./ARCHITECTURE.md), the in-app `/docs` reference, and the machine-readable OpenAPI 3.1 contract at `/openapi.json`.
 
 ## Useful calls
 
