@@ -30,7 +30,11 @@ Open the printed local URL. The product UI creates Solana Mainnet requests by de
 
 ## Important v0 boundaries
 
-D1 is the source of truth and is initialized from `db/schema.ts`; the equivalent checked-in migration is `db/migrations/0001_initial.sql`. Production health remains degraded until `SALMON_API_KEY`, `SALMON_BOOTSTRAP_SECRET`, `CRON_SECRET`, `WEBHOOK_ENCRYPTION_KEY`, an HTTPS `NEXT_PUBLIC_APP_URL`, and a paid/indexed `SOLANA_MAINNET_RPC_URL` are configured. Schedule both `POST /api/jobs/webhooks` and `POST /api/jobs/reconcile` with the cron bearer secret. Never put seed phrases or merchant private keys in this service.
+**Salmon Pay v0 is reference code, not a production-ready payment service.** It demonstrates one way to combine Solana Pay and x402 around a shared payment request, receipt and webhook lifecycle. Use it to study the protocol, run local or Devnet experiments, and as a starting point for your own implementation. Do not deploy it unchanged to process real payments or treat its current security, availability and operational controls as production guarantees.
+
+A production deployment must be reviewed and operated by its owner. At minimum, that includes threat modelling and independent security review, access and key-management policies, monitoring and incident response, backups and recovery, dependency and infrastructure hardening, capacity planning, and compliance with the legal and regulatory requirements that apply to the operator and its users. The repository does not provide those guarantees for you.
+
+Within this reference implementation, D1 is the source of truth and is initialized from `db/schema.ts`; the equivalent checked-in migration is `db/migrations/0001_initial.sql`. The health endpoint remains degraded in production until `SALMON_API_KEY`, `SALMON_BOOTSTRAP_SECRET`, `CRON_SECRET`, `WEBHOOK_ENCRYPTION_KEY`, an HTTPS `NEXT_PUBLIC_APP_URL`, and a paid/indexed `SOLANA_MAINNET_RPC_URL` are configured. Both `POST /api/jobs/webhooks` and `POST /api/jobs/reconcile` must be scheduled with the cron bearer secret. Never put seed phrases or merchant private keys in this service.
 
 The dashboard bootstraps a scoped test key automatically only outside production. External API clients send `Authorization: Bearer <key>`. In production, paste a configured API key into the dashboard when prompted. Bootstrap requires `SALMON_BOOTSTRAP_SECRET`; the environment key is the recovery/admin key.
 
